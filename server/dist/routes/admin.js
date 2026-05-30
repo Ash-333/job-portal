@@ -1,0 +1,35 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const auth_1 = require("../middleware/auth");
+const adminController_1 = require("../controllers/adminController");
+const router = express_1.default.Router();
+router.use(auth_1.authenticate, auth_1.requireAdmin);
+router.get('/dashboard/stats', adminController_1.adminController.getDashboardStats);
+router.get('/jobs', adminController_1.adminController.getJobs);
+router.post('/jobs', adminController_1.adminController.createJob);
+router.get('/jobs/:jobId', adminController_1.adminController.getJobById);
+router.put('/jobs/:jobId', adminController_1.adminController.updateJob);
+router.delete('/jobs/:jobId', adminController_1.adminController.deleteJob);
+router.put('/jobs/:jobId/approve', adminController_1.adminController.approveJob);
+router.put('/jobs/:jobId/reject', adminController_1.adminController.rejectJob);
+router.get('/applications', adminController_1.adminController.getApplications);
+router.put('/applications/:applicationId/status', adminController_1.adminController.updateApplicationStatus);
+router.get('/users', adminController_1.adminController.getUsers);
+router.get('/users/:userId', adminController_1.adminController.getUserById);
+router.get('/users/:userId/profile', adminController_1.adminController.getUserById);
+router.delete('/users/:userId', adminController_1.adminController.deleteUser);
+router.get('/blogs', adminController_1.adminController.getBlogs);
+router.post('/blogs', adminController_1.adminController.createBlog);
+router.get('/blogs/:blogId', adminController_1.adminController.getBlogById);
+router.put('/blogs/:blogId', adminController_1.adminController.updateBlog);
+router.delete('/blogs/:blogId', adminController_1.adminController.deleteBlog);
+router.get('/audit-logs', adminController_1.adminController.getAuditLogs);
+router.delete('/audit-logs/cleanup', adminController_1.adminController.cleanupAuditLogs);
+router.put('/users/:userId/suspend', adminController_1.adminController.suspendUser);
+router.put('/users/:userId/unsuspend', adminController_1.adminController.unsuspendUser);
+exports.default = router;
+//# sourceMappingURL=admin.js.map

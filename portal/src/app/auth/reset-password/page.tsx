@@ -1,0 +1,260 @@
+'use client'
+
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Lock, Eye, EyeOff, CheckCircle, Loader2, ArrowRight } from 'lucide-react'
+import { api } from '@/lib/api'
+import { useAuth } from '@/hooks/use-auth'
+import { toast } from 'sonner'
+
+// Force dynamic rendering for this page since it uses searchParams
+export const dynamic = 'force-dynamic'
+
+function ResetPasswordContent() {
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isSuccess, setIsSuccess] = useState(false)
+  const [token, setToken] = useState<string | null>(null)
+
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const { login } = useAuth()
+
+  useEffect(() => {
+    const tokenParam = searchParams.get('token')
+    if (!tokenParam) {
+      toast.error('Invalid reset link')
+      router.push('/auth/forgot-password')
+      return
+    }
+    setToken(tokenParam)
+  }, [searchParams, router])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!token) {
+      toast.error('Invalid reset token')
+      return
+    }
+
+    if (password.length < 8) {
+      toast.error('Password must be at least 8 characters long')
+      return
+    }
+
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match')
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      const response = await api.resetPassword(token, password)
+
+      // Auto-login the user
+      if (response.token) {
+        login(response.token, response.user)
+        toast.success('Password reset successfully! Welcome back! 🎉')
+      }
+
+      setIsSuccess(true)
+
+      // Redirect to dashboard after 3 seconds
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 3000)
+
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to reset password')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  if (isSuccess) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-secondary/10 flex items-center justify-center p-4">
+        {/* Background Elements */}
+        <div className="absolute top-20 left-10 w-72 h-72 bg-accent/10 rounded-full blur-3xl float"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-primary/10 rounded-full blur-3xl float" style={{animationDelay: '2s'}}></div>
+
+        <div className="w-full max-w-md relative">
+          <Card className="glass border-0 p-8">
+            <CardHeader className="text-center p-0 mb-8">
+              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-lg gradient-accent shadow-lg">
+                <CheckCircle className="h-10 w-10 text-accent-foreground" />
+              </div>
+              <CardTitle className="text-2xl font-bold text-foreground">
+                Password Reset! 🎉
+              </CardTitle>
+            </CardHeader>
+
+            <CardContent className="p-0 text-center space-y-6">
+              <p className="text-muted-foreground leading-relaxed">
+                Your password has been successfully reset. You're now logged in and ready to explore opportunities!
+              </p>
+
+              <div className="p-4 bg-accent/10 rounded-2xl border border-accent/20">
+                <p className="text-sm text-accent font-semibold">
+                  ✨ Redirecting you to your dashboard in 3 seconds...
+                </p>
+              </div>
+
+              <Button asChild className="w-full rounded-2xl font-bold gradient-primary hover:scale-105 transition-all duration-200">
+                <Link href="/dashboard">
+                  Go to Dashboard
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  if (!token) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-secondary/10 flex items-center justify-center p-4">
+        <div className="text-center">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-secondary/10 flex items-center justify-center p-4">
+      {/* Background Elements */}
+      <div className="absolute top-20 left-10 w-72 h-72 bg-destructive/10 rounded-full blur-3xl float"></div>
+      <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl float" style={{animationDelay: '2s'}}></div>
+
+      <div className="w-full max-w-md relative">
+        <Card className="glass border-0 p-8">
+          <CardHeader className="text-center p-0 mb-8">
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-destructive to-cta glow-accent">
+              <Lock className="h-10 w-10 text-white" />
+            </div>
+            <CardTitle className="text-2xl font-black text-foreground">
+              Reset Password 🔐
+            </CardTitle>
+            <p className="text-muted-foreground mt-2">
+              Choose a strong password for your account
+            </p>
+          </CardHeader>
+
+          <CardContent className="p-0">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-sm font-semibold text-foreground">
+                  New Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Enter your new password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="rounded-2xl border-2 h-12 px-4 pr-12 font-medium"
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Must be at least 8 characters long
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword" className="text-sm font-semibold text-foreground">
+                  Confirm Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    placeholder="Confirm your new password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="rounded-2xl border-2 h-12 px-4 pr-12 font-medium"
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full rounded-2xl font-bold h-12 bg-gradient-to-r from-destructive to-cta hover:scale-105 transition-all duration-200"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Resetting...
+                  </>
+                ) : (
+                  <>
+                    <Lock className="mr-2 h-5 w-5" />
+                    Reset Password
+                  </>
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <div className="text-center mt-6">
+          <Link
+            href="/auth/login"
+            className="text-muted-foreground hover:text-foreground transition-colors font-medium"
+          >
+            ← Back to Login
+          </Link>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-secondary/10 flex items-center justify-center p-4">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    }>
+      <ResetPasswordContent />
+    </Suspense>
+  )
+}
