@@ -352,6 +352,10 @@ class ApiClient {
     }
   }
 
+  getToken(): string | null {
+    return this.token
+  }
+
   setToken(token: string) {
     this.token = token
     if (typeof window !== 'undefined') {
@@ -720,13 +724,7 @@ export const formatSalary = (min?: number, max?: number, negotiable?: boolean): 
   return 'Not specified'
 }
 
-export const formatDate = (dateString: string): string => {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
-}
+// formatDate lives in '@/lib/utils' — the single canonical date formatter.
 
 export const getJobTypeLabel = (type: string): string => {
   const labels: Record<string, string> = {
